@@ -1,0 +1,260 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&display=swap");
+
+/* ==============================
+   Base 
+================================= */
+
+:root {
+  --bg-page: hsl(210, 20%, 98%);
+  --bg-surface-1: hsl(0, 0%, 100%);
+  --border-subtle: hsl(220, 13%, 90%);
+  --border-medium: hsl(216, 12%, 82%);
+  --border-strong: hsl(218, 11%, 65%);
+  --border-hover: hsl(216, 12%, 70%);
+  --border-active: hsl(221, 39%, 20%);
+
+  --text-default: hsl(221, 0%, 10%);
+  --text-subtle: hsl(221, 0%, 35%);
+  --text-muted: hsl(220, 0%, 45%);
+  --text-placeholder: hsl(220, 0%, 45%);
+  --text-tokenAlias: hsl(242, 38%, 58%);
+  --text-tokenResolvedValue: hsl(350, 45%, 48%);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+
+  --fontFamily-mono: "Source Code Pro", monospace;
+  --fontFamily-sans: "Inter", sans-serif;
+  --fontFamily-serif: "Times New Roman", serif;
+
+  --transition-fast: 0.15s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--fontFamily-sans);
+  background: var(--bg-page);
+  padding: var(--space-4);
+  margin: 0;
+  color: var(--text-default);
+}
+
+h1 {
+  margin-bottom: var(--space-4);
+}
+
+label,
+.label {
+  color: var(--text-subtle);
+  font-size: 12px;
+  margin-bottom: var(--space-1);
+  display: block;
+  /* text-transform: uppercase; */
+  letter-spacing: 0.03em;
+  font-family: var(--fontFamily-mono);
+}
+
+/* ==============================
+   Layout
+================================= */
+
+.col {
+  display: flex;
+  flex-direction: column;
+  /* gap: var(--space-1); */
+}
+.row {
+  display: flex;
+  /* gap: var(--space-3); */
+  align-items: center;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  align-items: stretch;
+}
+
+.token-stats {
+  width: 100%;
+  margin-bottom: var(--space-2);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+/* ==============================
+   Controls
+================================= */
+
+.controls {
+  width: 100%;
+  /* padding: var(--space-3); */
+  padding-bottom: var(--space-4);
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border-subtle);
+  /* border-radius: var(--radius-sm); */
+}
+
+.controls select,
+.controls input {
+  appearance: none;
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  min-width: 120px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-default);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.controls input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.controls select {
+  cursor: pointer;
+  padding-right: 36px;
+}
+
+.controls select:hover,
+.controls input:hover {
+  border-color: var(--border-hover);
+}
+
+.controls select:focus,
+.controls input:focus {
+  outline: none;
+  border-color: var(--border-active);
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+}
+
+/* ==============================
+   Token Cards
+================================= */
+
+.card {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  transition: border-color var(--transition-fast);
+  height: fit-content;
+}
+
+.token-name,
+.token-alias,
+.token-value {
+  font-family: var(--fontFamily-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-default);
+  margin-bottom: 4px);
+  word-break: break-all;
+}
+
+.token-name {
+  font-family: var(--fontFamily-sans);
+  color: var(--text-default);
+  font-weight: 500;
+  margin-bottom: var(--space-1);
+}
+
+.token-alias {
+  color: var(--text-tokenAlias);
+}
+
+.token-alias.level-1 {
+  font-size: 13px;
+  padding-left: 4px;
+}
+.token-alias.level-2 {
+  font-size: 11px;
+  padding-left: 8px;
+}
+.token-alias.level-3plus {
+  font-size: 11px;
+  padding-left: 12px;
+  /* opacity: 0.8; */
+}
+
+.token-value {
+  font-size: 12px;
+  color: var(--text-tokenResolvedValue);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* ==============================
+   Token Counter Tooltip
+================================= */
+
+.token-count {
+  position: relative;
+  cursor: default;
+}
+
+.token-count:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 24px;
+  left: 0;
+  white-space: pre;
+  background: var(--text-default);
+  color: white;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+/* ==============================
+   Copy Tokens
+================================= */
+
+.copyable {
+        position: relative;
+        padding-right: 24px;
+        cursor: pointer;
+      }
+
+      .copy-btn {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        font-size: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+
+      .copyable:hover .copy-btn {
+        opacity: 1;
+      }

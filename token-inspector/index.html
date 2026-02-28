@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Design Token Inspector</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style></style>
+  </head>
+  <body>
+    <h1>Design Token Inspector v1</h1>
+    <p>Branch: ResolvedValues</p>
+
+    <div class="controls">
+      <div class="col">
+        <label for="platformSelect">Platform:</label>
+        <select id="platformSelect"></select>
+      </div>
+      <div class="col">
+        <label for="tierSelect">Tier:</label>
+        <select id="tierSelect">
+          <option value="all">All tiers</option>
+          <option value="core">Core</option>
+          <option value="semantic">Semantic</option>
+          <option value="component">Component</option>
+        </select>
+      </div>
+      <div class="col">
+        <label for="searchInput">Search:</label>
+        <input type="text" id="searchInput" placeholder="Search tokens..." />
+      </div>
+    </div>
+    <div class="token-stats">
+      <span id="tokenCount" class="label token-count"></span>
+    </div>
+
+    <div class="grid" id="tokenGrid"></div>
+
+    <script>
+      const grid = document.getElementById("tokenGrid");
+      const platformSelect = document.getElementById("platformSelect");
+      const tierSelect = document.getElementById("tierSelect");
+      const searchInput = document.getElementById("searchInput");
+      const tokenCountEl = document.getElementById("tokenCount");
+
+      let allTokens = {};
+
+      async function init() {
+        const metadata = await fetch("../tokens/$metadata.json").then((r) =>
+          r.json(),
+        );
+
+        const platforms = new Set();
+        const tierMap = {};
+
+        for (const entry of metadata.tokenSetOrder) {
+          const [platform, tierFile] = entry.split("/");
+          const tier = tierFile.replace("-web", "");
+
+          platforms.add(platform);
+
+          if (!tierMap[platform]) tierMap[platform] = [];
+          tierMap[platform].push(tierFile);
+        }
+
+        platformSelect.innerHTML = "";
+        platforms.forEach((p) => {
+          const option = document.createElement("option");
+          option.value = p;
+          option.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+          platformSelect.appendChild(option);
+        });
+
+        for (const platform of platforms) {
+          allTokens[platform] = {};
+
+          const entries = metadata.tokenSetOrder.filter((e) =>
+            e.startsWith(platform),
+          );
+
+          for (const entry of entries) {
+            const res = await fetch(`../tokens/${entry}.json`);
+            const json = await res.json();
+            allTokens[platform][entry.split("/")[1]] = flattenTokens(json);
+          }
+        }
+
+        render();
+      }
+
+      function flattenTokens(obj, prefix = "") {
+        let result = {};
+
+        for (const key in obj) {
+          const value = obj[key];
+          const path = prefix ? `${prefix}.${key}` : key;
+
+          if (value && typeof value === "object" && "$value" in value) {
+            result[path] = value;
+          } else if (value && typeof value === "object") {
+            Object.assign(result, flattenTokens(value, path));
+          }
+        }
+
+        return result;
+      }
+
+      function resolveTokenValue(
+        tokenName,
+        platform,
+        visited = new Set(),
+        chain = [],
+      ) {
+        const tiers = allTokens[platform];
+
+        // Merge tiers into single lookup
+        const lookup = {};
+        for (const tierFile in tiers) {
+          Object.assign(lookup, tiers[tierFile]);
+        }
+
+        const token = lookup[tokenName];
+        if (!token) return { value: undefined, chain };
+
+        const value = token.$value;
+
+        // Primitive value
+        if (typeof value !== "string") {
+          return { value, chain };
+        }
+
+        // Not alias
+        if (!value.startsWith("{")) {
+          return { value, chain };
+        }
+
+        const aliasPath = value.slice(1, -1);
+
+        // Prevent infinite loop
+        if (visited.has(aliasPath)) {
+          return { value, chain };
+        }
+
+        visited.add(aliasPath);
+        chain.push(aliasPath);
+
+        return resolveTokenValue(aliasPath, platform, visited, chain);
+      }
+
+      function render() {
+        grid.innerHTML = "";
+
+        const platform = platformSelect.value;
+        const selectedTier = tierSelect.value;
+        const search = searchInput.value.trim().toLowerCase();
+
+        if (!platform) return;
+
+        const tiers = allTokens[platform];
+
+        let totalCount = 0;
+        let tierCounts = {};
+
+        for (const tierFile in tiers) {
+          const tier = tierFile.replace("-web", "");
+
+          if (selectedTier !== "all" && tier !== selectedTier) continue;
+
+          const tokens = tiers[tierFile];
+
+          if (!tierCounts[tier]) tierCounts[tier] = 0;
+
+          for (const name in tokens) {
+            if (search && !name.toLowerCase().includes(search)) continue;
+
+            tierCounts[tier]++;
+            totalCount++;
+
+            const token = tokens[name];
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const rawValue = token.$value;
+            const isAlias =
+              typeof rawValue === "string" && rawValue.startsWith("{");
+
+            let resolved = { value: rawValue, chain: [] };
+
+            if (isAlias) {
+              resolved = resolveTokenValue(name, platform);
+            }
+
+            const resolvedValue = resolved.value;
+            const aliasChain = resolved.chain;
+
+            card.innerHTML = `
+              <div class="token-name copyable" data-copy="${name}">
+                ${name}
+                <button class="copy-btn">⧉</button>
+              </div>
+              ${
+                isAlias
+                  ? aliasChain
+                      .map((a, index) => {
+                        const levelClass =
+                          index === 0
+                            ? "level-1"
+                            : index === 1
+                              ? "level-2"
+                              : "level-3plus";
+                        return `
+                          <div class="token-alias ${levelClass} copyable" data-copy="{${a}}">
+                            → {${a}}
+                            <button class="copy-btn">⧉</button>
+                          </div>
+                        `;
+                      })
+                      .join("")
+                  : ""
+              }
+              <div class="token-value copyable" data-copy="${resolvedValue}">
+                ${resolvedValue}
+                <button class="copy-btn">⧉</button>
+              </div>
+            `;
+
+            grid.appendChild(card);
+          }
+        }
+
+        // Update total text
+        tokenCountEl.textContent = `Tokens (${totalCount})`;
+
+        // Build tooltip
+        const tooltipLines = Object.entries(tierCounts)
+          .map(([tier, count]) => `${tier} (${count})`)
+          .join("\n");
+
+        tokenCountEl.setAttribute("data-tooltip", tooltipLines);
+      }
+
+      platformSelect.addEventListener("change", render);
+      tierSelect.addEventListener("change", render);
+      searchInput.addEventListener("input", render);
+
+      grid.addEventListener("click", async (e) => {
+        const button = e.target.closest(".copy-btn");
+        if (!button) return;
+
+        e.stopPropagation();
+
+        const container = button.closest(".copyable");
+        if (!container) return;
+
+        const text = container.getAttribute("data-copy");
+        if (!text) return;
+
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch (err) {
+          console.error("Copy failed", err);
+        }
+      });
+
+      init();
+    </script>
+  </body>
+</html>
