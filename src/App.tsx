@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { flattenTokens, resolveTokenValue } from "@/lib/token-engine"
+import { TokenCard } from "@/components/token-card"
 
 interface Token {
   $value: any
@@ -127,82 +128,16 @@ export default function App() {
         <ScrollArea className="h-[60vh]">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 pr-4">
             {visibleTokens.map(token => (
-              <Card key={token.name}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm break-all">
-                    {token.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs">
-                  {token.chain.map((alias: string, i: number) => (
-                    <div key={i} className="text-muted-foreground break-all">
-                      → {alias}
-                    </div>
-                  ))}
-                  <div className="font-mono break-all">
-                    {String(token.value)}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigator.clipboard.writeText(token.name)}
-                  >
-                    Copy name
-                  </Button>
-                </CardContent>
-              </Card>
+              <TokenCard
+                key={token.name}
+                name={token.name}
+                value={token.value}
+                chain={token.chain}
+              />
             ))}
           </div>
         </ScrollArea>
       </div>
     </TooltipProvider>
   )
-}
-
-function flattenTokens(obj: any, prefix = "") {
-  let result: any = {}
-
-  for (const key in obj) {
-    const value = obj[key]
-    const path = prefix ? `${prefix}.${key}` : key
-
-    if (value && typeof value === "object" && "$value" in value) {
-      result[path] = value
-    } else if (value && typeof value === "object") {
-      Object.assign(result, flattenTokens(value, path))
-    }
-  }
-
-  return result
-}
-
-function resolveTokenValue(
-  tokenName: string,
-  platform: string,
-  allTokens: any,
-  visited = new Set<string>(),
-  chain: string[] = []
-) {
-  const tiers = allTokens[platform]
-  const lookup: any = {}
-
-  for (const tierFile in tiers) {
-    Object.assign(lookup, tiers[tierFile])
-  }
-
-  const token = lookup[tokenName]
-  if (!token) return { value: undefined, chain }
-
-  const value = token.$value
-  if (typeof value !== "string" || !value.startsWith("{")) {
-    return { value, chain }
-  }
-
-  const aliasPath = value.slice(1, -1)
-  if (visited.has(aliasPath)) return { value, chain }
-
-  visited.add(aliasPath)
-  chain.push(aliasPath)
-
-  return resolveTokenValue(aliasPath, platform, allTokens, visited, chain)
 }
