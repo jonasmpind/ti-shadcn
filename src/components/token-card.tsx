@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Copy } from "lucide-react"
 
 interface TokenCardProps {
   name: string
@@ -11,9 +12,21 @@ export function TokenCard({ name, value, chain }: TokenCardProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm break-all">
-          {name}
-        </CardTitle>
+        <div className="group inline-flex max-w-full items-start gap-1">
+          <CardTitle className="text-sm break-all">
+            {name}
+          </CardTitle>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:opacity-100 focus-visible:opacity-100"
+            onClick={() => navigator.clipboard.writeText(name)}
+            aria-label="Copy token name"
+            title="Copy token name"
+          >
+            <Copy />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-2 text-xs">
         {chain.map((alias: string, i: number) => (
@@ -24,13 +37,6 @@ export function TokenCard({ name, value, chain }: TokenCardProps) {
         <div className="font-mono break-all">
           {String(value)}
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => navigator.clipboard.writeText(name)}
-        >
-          Copy name
-        </Button>
       </CardContent>
     </Card>
   )
