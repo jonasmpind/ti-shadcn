@@ -5,20 +5,31 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
 import { flattenTokens, resolveTokenValue } from "@/lib/token-engine"
 import { TokenCard } from "@/components/token-card"
+import { Moon, Sun } from "lucide-react"
 
 interface Token {
   $value: any
 }
 
 type PlatformTokens = Record<string, Record<string, Token>>
+type Theme = "light" | "dark"
+
+const getInitialTheme = (): Theme => {
+  const savedTheme = localStorage.getItem("theme")
+  if (savedTheme === "dark" || savedTheme === "light") return savedTheme
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+}
 
 export default function App() {
   const [allTokens, setAllTokens] = useState<Record<string, PlatformTokens>>({})
   const [platform, setPlatform] = useState<string>("")
   const [tier, setTier] = useState<string>("all")
   const [search, setSearch] = useState<string>("")
+  const [theme, setTheme] = useState<Theme>(getInitialTheme)
 
   useEffect(() => {
     async function load() {
@@ -49,6 +60,12 @@ export default function App() {
 
     load()
   }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle("dark", theme === "dark")
+    localStorage.setItem("theme", theme)
+  }, [theme])
 
   const visibleTokens = useMemo(() => {
     if (!platform || !allTokens[platform]) return []
@@ -86,7 +103,18 @@ export default function App() {
   return (
     <TooltipProvider>
       <div className="container mx-auto py-8 space-y-6">
-        <h1 className="text-2xl font-semibold">Design Token Inspector</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Design Token Inspector</h1>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setTheme(currentTheme => currentTheme === "light" ? "dark" : "light")}
+            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            {theme === "light" ? <Moon /> : <Sun />}
+          </Button>
+        </div>
 
         <Card>
           <CardContent className="p-4 grid md:grid-cols-3 gap-4">
