@@ -119,12 +119,15 @@ export default function App() {
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-12 items-center justify-between gap-3 px-4 md:px-6">
             <h1 className="text-sm font-semibold tracking-tight">
-              Design Token Inspector
+              Design Token Inspector{" "}
+              <span className="ml-1 text-xs font-normal opacity-70">
+                by JMP v0.1.0
+              </span>
             </h1>
 
             <div className="flex items-center justify-end gap-2">
               <Badge
-                variant="ghost"
+                variant={null}
                 className="font-mono font-light border-none opacity-70"
               >
                 Tokens ({visibleTokens.length})
