@@ -12,7 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { flattenTokens, resolveTokenValue } from "@/lib/token-engine";
 import { TokenCard } from "@/components/token-card";
-import { Moon, Sun } from "lucide-react";
+import { Moon, PanelLeftClose, PanelLeftOpen, Sun } from "lucide-react";
 
 interface Token {
   $value: any;
@@ -38,6 +38,7 @@ export default function App() {
   const [tier, setTier] = useState<string>("all");
   const [search, setSearch] = useState<string>("");
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -118,12 +119,25 @@ export default function App() {
       <div className="h-screen w-full overflow-hidden">
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-12 items-center justify-between gap-3 px-4 md:px-6">
-            <h1 className="text-sm font-semibold tracking-tight">
-              Design Token Inspector{" "}
-              <span className="ml-1 text-xs font-normal opacity-70">
-                by JMP v0.1.0
-              </span>
-            </h1>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setIsSidebarOpen((current) => !current)}
+                aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              >
+                {isSidebarOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
+              </Button>
+
+              <h1 className="text-sm font-semibold tracking-tight">
+                Design Token Inspector{" "}
+                <span className="ml-1 text-xs font-normal opacity-70">
+                  by JMP v0.1.0
+                </span>
+              </h1>
+            </div>
 
             <div className="flex items-center justify-end gap-2">
               <Badge
@@ -191,20 +205,38 @@ export default function App() {
           </div>
         </header>
 
-        <main className="app-scrollbar h-[calc(100vh-3rem)] overflow-y-auto">
-          <div className="px-4 py-6 md:px-6">
-            <div className="grid gap-4 pb-8 md:grid-cols-2 md:pb-10 lg:grid-cols-3">
-              {visibleTokens.map((token) => (
-                <TokenCard
-                  key={token.name}
-                  name={token.name}
-                  value={token.value}
-                  chain={token.chain}
-                />
-              ))}
+        <div className="flex h-[calc(100vh-3rem)]">
+          <aside
+            className={`border-r bg-muted/20 transition-[width] duration-200 ${isSidebarOpen ? "w-64" : "w-14"}`}
+          >
+            <div className="flex h-full flex-col gap-2 p-2">
+              <div className="rounded-md border bg-background px-3 py-2 text-xs font-medium">
+                {isSidebarOpen ? "Navigation" : "Nav"}
+              </div>
+              <div className="rounded-md px-3 py-2 text-xs text-muted-foreground">
+                {isSidebarOpen ? `Platform: ${platform || "None"}` : "P"}
+              </div>
+              <div className="rounded-md px-3 py-2 text-xs text-muted-foreground">
+                {isSidebarOpen ? `Tier: ${tier}` : "T"}
+              </div>
             </div>
-          </div>
-        </main>
+          </aside>
+
+          <main className="app-scrollbar flex-1 overflow-y-auto">
+            <div className="px-4 py-6 md:px-6">
+              <div className="grid gap-4 pb-8 md:grid-cols-2 md:pb-10 lg:grid-cols-3">
+                {visibleTokens.map((token) => (
+                  <TokenCard
+                    key={token.name}
+                    name={token.name}
+                    value={token.value}
+                    chain={token.chain}
+                  />
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     </TooltipProvider>
   );
