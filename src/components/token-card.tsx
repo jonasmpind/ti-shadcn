@@ -67,7 +67,7 @@ export function TokenCard({ name, value, chain }: TokenCardProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="group inline-flex items-start gap-2 text-sm">
+        <div className="group inline-flex w-fit items-start gap-2 text-sm">
           <CardTitle className="break-all">{name}</CardTitle>
           <CopyActionButton textToCopy={name} ariaLabel="Copy token name" />
         </div>
@@ -84,7 +84,10 @@ export function TokenCard({ name, value, chain }: TokenCardProps) {
         ))}
         <div className="group flex w-fit items-start gap-2">
           <div className="font-mono break-all">{String(value)}</div>
-          <CopyActionButton textToCopy={String(value)} ariaLabel="Copy token value" />
+          <CopyActionButton
+            textToCopy={String(value)}
+            ariaLabel="Copy token value"
+          />
         </div>
       </CardContent>
     </Card>
