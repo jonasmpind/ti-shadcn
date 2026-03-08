@@ -12,7 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { flattenTokens, resolveTokenValue } from "@/lib/token-engine";
 import { TokenCard } from "@/components/token-card";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, X } from "lucide-react";
 
 interface Token {
   $value: any;
@@ -114,7 +114,7 @@ export default function App() {
   }, [allTokens, platform, tier, search]);
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={120} skipDelayDuration={0}>
       <div className="h-screen w-full overflow-hidden">
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-12 items-center justify-between gap-3 px-4 md:px-6">
@@ -134,7 +134,7 @@ export default function App() {
               </Badge>
 
               <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger className="h-8 w-[150px]">
+                <SelectTrigger className="h-8 w-[150px] transition-colors hover:border-foreground/30 hover:bg-muted/40">
                   <SelectValue placeholder="Platform" />
                 </SelectTrigger>
                 <SelectContent>
@@ -147,7 +147,7 @@ export default function App() {
               </Select>
 
               <Select value={tier} onValueChange={setTier}>
-                <SelectTrigger className="h-8 w-[130px]">
+                <SelectTrigger className="h-8 w-[130px] transition-colors hover:border-foreground/30 hover:bg-muted/40">
                   <SelectValue placeholder="Tier" />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,12 +158,27 @@ export default function App() {
                 </SelectContent>
               </Select>
 
-              <Input
-                className="h-8 w-[220px]"
-                placeholder="Search tokens..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <div className="relative w-[220px]">
+                <Input
+                  className="h-8 pr-9 transition-colors hover:border-foreground/30 hover:bg-muted/40"
+                  placeholder="Search tokens..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 rounded-full bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    title="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
 
               <Button
                 variant="ghost"
