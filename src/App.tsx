@@ -38,39 +38,92 @@ export default function App() {
   const [tier, setTier] = useState<string>("all");
   const [search, setSearch] = useState<string>("");
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isCancelled = false;
+
     async function load() {
-      const metadata = await fetch("/tokens/$metadata.json").then((r) =>
-        r.json(),
-      );
+      setIsLoading(true);
+      setLoadError(null);
 
-      const platforms = new Set<string>();
-      metadata.tokenSetOrder.forEach((entry: string) => {
-        const [p] = entry.split("/");
-        platforms.add(p);
-      });
+      try {
+        const metadataRes = await fetch("/tokens/$metadata.json");
+        if (!metadataRes.ok) {
+          throw new Error(
+            `Could not load token metadata (${metadataRes.status})`,
+          );
+        }
 
-      const data: Record<string, PlatformTokens> = {};
+        const metadata = (await metadataRes.json()) as { tokenSetOrder?: string[] };
+        const tokenSetOrder = Array.isArray(metadata.tokenSetOrder)
+          ? metadata.tokenSetOrder
+          : [];
 
-      for (const p of platforms) {
-        data[p] = {};
-        const entries = metadata.tokenSetOrder.filter((e: string) =>
-          e.startsWith(p),
+        const orderedPlatforms = Array.from(
+          new Set(
+            tokenSetOrder
+              .map((entry) => entry.split("/")[0])
+              .filter((entry) => Boolean(entry)),
+          ),
         );
 
-        for (const entry of entries) {
-          const res = await fetch(`/tokens/${entry}.json`);
-          const json = await res.json();
-          data[p][entry.split("/")[1]] = flattenTokens(json);
-        }
-      }
+        const tokenEntries = await Promise.all(
+          tokenSetOrder.map(async (entry) => {
+            const res = await fetch(`/tokens/${entry}.json`);
+            if (!res.ok) {
+              throw new Error(
+                `Could not load token file "${entry}.json" (${res.status})`,
+              );
+            }
 
-      setAllTokens(data);
-      setPlatform(Array.from(platforms)[0] ?? "");
+            const json = await res.json();
+            const [platformName, tierName] = entry.split("/");
+            return { platformName, tierName, tokens: flattenTokens(json) };
+          }),
+        );
+
+        if (isCancelled) return;
+
+        const data: Record<string, PlatformTokens> = {};
+
+        for (const platformName of orderedPlatforms) {
+          data[platformName] = {};
+        }
+
+        for (const entry of tokenEntries) {
+          if (!entry.platformName || !entry.tierName) continue;
+          if (!data[entry.platformName]) data[entry.platformName] = {};
+          data[entry.platformName][entry.tierName] = entry.tokens;
+        }
+
+        setAllTokens(data);
+        setPlatform((currentPlatform) =>
+          currentPlatform && data[currentPlatform]
+            ? currentPlatform
+            : orderedPlatforms[0] ?? "",
+        );
+      } catch (error) {
+        if (isCancelled) return;
+
+        setAllTokens({});
+        setPlatform("");
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "Could not load token data.",
+        );
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
     }
 
     load();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -113,6 +166,8 @@ export default function App() {
     return results;
   }, [allTokens, platform, tier, search]);
 
+  const hasLoadedData = Object.keys(allTokens).length > 0;
+
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={0}>
       <div className="h-screen w-full overflow-hidden">
@@ -130,11 +185,14 @@ export default function App() {
                 variant={null}
                 className="font-mono font-light border-none opacity-70"
               >
-                Tokens ({visibleTokens.length})
+                {isLoading ? "Loading tokens..." : `Tokens (${visibleTokens.length})`}
               </Badge>
 
               <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger className="h-8 w-[150px] transition-colors hover:border-foreground/30 hover:bg-muted/40">
+                <SelectTrigger
+                  disabled={isLoading || !hasLoadedData}
+                  className="h-8 w-[150px] transition-colors hover:border-foreground/30 hover:bg-muted/40"
+                >
                   <SelectValue placeholder="Platform" />
                 </SelectTrigger>
                 <SelectContent>
@@ -147,7 +205,10 @@ export default function App() {
               </Select>
 
               <Select value={tier} onValueChange={setTier}>
-                <SelectTrigger className="h-8 w-[130px] transition-colors hover:border-foreground/30 hover:bg-muted/40">
+                <SelectTrigger
+                  disabled={isLoading || !hasLoadedData}
+                  className="h-8 w-[130px] transition-colors hover:border-foreground/30 hover:bg-muted/40"
+                >
                   <SelectValue placeholder="Tier" />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,6 +221,7 @@ export default function App() {
 
               <div className="relative w-[220px]">
                 <Input
+                  disabled={isLoading || !hasLoadedData}
                   className="h-8 pr-9 transition-colors hover:border-foreground/30 hover:bg-muted/40"
                   placeholder="Search tokens..."
                   value={search}
@@ -208,16 +270,36 @@ export default function App() {
 
         <main className="app-scrollbar h-[calc(100vh-3rem)] overflow-y-auto">
           <div className="px-4 py-6 md:px-6">
-            <div className="grid gap-4 pb-8 md:grid-cols-2 md:pb-10 lg:grid-cols-3">
-              {visibleTokens.map((token) => (
-                <TokenCard
-                  key={token.name}
-                  name={token.name}
-                  value={token.value}
-                  chain={token.chain}
-                />
-              ))}
-            </div>
+            {isLoading && (
+              <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+                Loading token files...
+              </div>
+            )}
+
+            {!isLoading && loadError && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                {loadError}
+              </div>
+            )}
+
+            {!isLoading && !loadError && visibleTokens.length === 0 && (
+              <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+                No tokens match the selected filters.
+              </div>
+            )}
+
+            {!isLoading && !loadError && visibleTokens.length > 0 && (
+              <div className="grid gap-4 pb-8 md:grid-cols-2 md:pb-10 lg:grid-cols-3">
+                {visibleTokens.map((token) => (
+                  <TokenCard
+                    key={token.name}
+                    name={token.name}
+                    value={token.value}
+                    chain={token.chain}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </main>
       </div>
