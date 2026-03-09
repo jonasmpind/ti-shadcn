@@ -35,6 +35,7 @@ export default function App() {
     {},
   );
   const [platform, setPlatform] = useState<string>("");
+  const [defaultPlatform, setDefaultPlatform] = useState<string>("");
   const [tier, setTier] = useState<string>("all");
   const [search, setSearch] = useState<string>("");
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
@@ -99,6 +100,7 @@ export default function App() {
         }
 
         setAllTokens(data);
+        setDefaultPlatform(orderedPlatforms[0] ?? "");
         setPlatform((currentPlatform) =>
           currentPlatform && data[currentPlatform]
             ? currentPlatform
@@ -167,6 +169,10 @@ export default function App() {
   }, [allTokens, platform, tier, search]);
 
   const hasLoadedData = Object.keys(allTokens).length > 0;
+  const hasActiveFilters =
+    tier !== "all" || (defaultPlatform ? platform !== defaultPlatform : false);
+  const showClearFiltersAction =
+    !isLoading && !loadError && visibleTokens.length === 0 && Boolean(search) && hasActiveFilters;
 
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={0}>
@@ -284,7 +290,23 @@ export default function App() {
 
             {!isLoading && !loadError && visibleTokens.length === 0 && (
               <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-                No tokens match the selected filters.
+                <div className="flex items-center gap-3">
+                  <span>No tokens match the selected filters.</span>
+                  {showClearFiltersAction && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="ml-auto"
+                      onClick={() => {
+                        setTier("all");
+                        if (defaultPlatform) setPlatform(defaultPlatform);
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
