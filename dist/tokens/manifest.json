@@ -1,0 +1,10 @@
+{
+  "tokens": [
+    "base/core.json",
+    "base/semantic.json",
+    "base/component.json",
+    "web/core-web.json",
+    "web/semantic-web.json",
+    "web/component-web.json"
+  ]
+}

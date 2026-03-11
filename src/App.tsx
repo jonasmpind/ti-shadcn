@@ -10,15 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { flattenTokens, resolveTokenValue } from "@/lib/token-engine";
+import { resolveTokenValue } from "@/lib/token-engine";
 import { TokenCard } from "@/components/token-card";
 import { Moon, Sun, X } from "lucide-react";
+import { loadTokenData, type PlatformTokens } from "@/token-engine/loadTokenData";
 
-interface Token {
-  $value: any;
-}
-
-type PlatformTokens = Record<string, Record<string, Token>>;
 type Theme = "light" | "dark";
 
 const getInitialTheme = (): Theme => {
@@ -50,54 +46,9 @@ export default function App() {
       setLoadError(null);
 
       try {
-        const metadataRes = await fetch("/tokens/$metadata.json");
-        if (!metadataRes.ok) {
-          throw new Error(
-            `Could not load token metadata (${metadataRes.status})`,
-          );
-        }
-
-        const metadata = (await metadataRes.json()) as { tokenSetOrder?: string[] };
-        const tokenSetOrder = Array.isArray(metadata.tokenSetOrder)
-          ? metadata.tokenSetOrder
-          : [];
-
-        const orderedPlatforms = Array.from(
-          new Set(
-            tokenSetOrder
-              .map((entry) => entry.split("/")[0])
-              .filter((entry) => Boolean(entry)),
-          ),
-        );
-
-        const tokenEntries = await Promise.all(
-          tokenSetOrder.map(async (entry) => {
-            const res = await fetch(`/tokens/${entry}.json`);
-            if (!res.ok) {
-              throw new Error(
-                `Could not load token file "${entry}.json" (${res.status})`,
-              );
-            }
-
-            const json = await res.json();
-            const [platformName, tierName] = entry.split("/");
-            return { platformName, tierName, tokens: flattenTokens(json) };
-          }),
-        );
+        const { allTokens: data, orderedPlatforms } = await loadTokenData();
 
         if (isCancelled) return;
-
-        const data: Record<string, PlatformTokens> = {};
-
-        for (const platformName of orderedPlatforms) {
-          data[platformName] = {};
-        }
-
-        for (const entry of tokenEntries) {
-          if (!entry.platformName || !entry.tierName) continue;
-          if (!data[entry.platformName]) data[entry.platformName] = {};
-          data[entry.platformName][entry.tierName] = entry.tokens;
-        }
 
         setAllTokens(data);
         setDefaultPlatform(orderedPlatforms[0] ?? "");

@@ -1,0 +1,36 @@
+{
+  "fontSizes": {
+    "title": {
+      "$type": "fontSizes",
+      "$value": "34"
+    },
+    "h1": {
+      "$type": "fontSizes",
+      "$value": "24"
+    },
+    "h2": {
+      "$type": "fontSizes",
+      "$value": "20"
+    },
+    "h3": {
+      "$type": "fontSizes",
+      "$value": "16"
+    },
+    "body": {
+      "$type": "fontSizes",
+      "$value": "16"
+    },
+    "sm": {
+      "$type": "fontSizes",
+      "$value": "14"
+    },
+    "xs": {
+      "$type": "fontSizes",
+      "$value": "12"
+    },
+    "xxs": {
+      "$type": "fontSizes",
+      "$value": "10"
+    }
+  }
+}
