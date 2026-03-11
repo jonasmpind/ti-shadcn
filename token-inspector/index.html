@@ -46,14 +46,16 @@
       let allTokens = {};
 
       async function init() {
-        const metadata = await fetch("../tokens/$metadata.json").then((r) =>
+        const manifest = await fetch("/tokens/manifest.json").then((r) =>
           r.json(),
         );
+        const tokenFiles = Array.isArray(manifest.tokens) ? manifest.tokens : [];
 
         const platforms = new Set();
         const tierMap = {};
 
-        for (const entry of metadata.tokenSetOrder) {
+        for (const file of tokenFiles) {
+          const entry = file.replace(/\.json$/i, "");
           const [platform, tierFile] = entry.split("/");
           const tier = tierFile.replace("-web", "");
 
@@ -74,12 +76,13 @@
         for (const platform of platforms) {
           allTokens[platform] = {};
 
-          const entries = metadata.tokenSetOrder.filter((e) =>
-            e.startsWith(platform),
+          const entries = tokenFiles.filter((file) =>
+            file.startsWith(`${platform}/`),
           );
 
-          for (const entry of entries) {
-            const res = await fetch(`../tokens/${entry}.json`);
+          for (const file of entries) {
+            const entry = file.replace(/\.json$/i, "");
+            const res = await fetch(`/tokens/${file}`);
             const json = await res.json();
             allTokens[platform][entry.split("/")[1]] = flattenTokens(json);
           }
