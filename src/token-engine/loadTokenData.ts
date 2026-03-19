@@ -1,10 +1,9 @@
-import { flattenTokens } from "@/lib/token-engine";
-import { staticTokenSource } from "@/token-sources/staticSource";
-import { uploadTokenSource } from "@/token-sources/uploadSource";
-import type { TokenSource } from "@/token-sources/types";
+import { loadTokens } from "@/token-loaders/registry";
 
 interface Token {
-  $value: unknown;
+  $value: string;
+  $type: string;
+  path: string[];
 }
 
 type FlatTierTokens = Record<string, Token>;
@@ -37,18 +36,15 @@ function parseTokenSetId(
 }
 
 export async function loadTokenData(
-  sources: TokenSource[] = [staticTokenSource, uploadTokenSource],
+  input: unknown = { kind: "static" },
 ): Promise<LoadedTokenData> {
-  const tokenSetGroups = await Promise.all(
-    sources.map((source) => source.loadTokenSets()),
-  );
-  const tokenSets = tokenSetGroups.flat();
+  const normalizedTokens = await loadTokens(input);
 
   const allTokens: Record<string, PlatformTokens> = {};
   const orderedPlatforms: string[] = [];
 
-  for (const tokenSet of tokenSets) {
-    const parsedTokenSet = parseTokenSetId(tokenSet.id);
+  for (const token of normalizedTokens) {
+    const parsedTokenSet = parseTokenSetId(token.tokenSetId);
     if (!parsedTokenSet) continue;
 
     const { platformName, tierName } = parsedTokenSet;
@@ -57,7 +53,15 @@ export async function loadTokenData(
       orderedPlatforms.push(platformName);
     }
 
-    allTokens[platformName][tierName] = flattenTokens(tokenSet.tokens);
+    if (!allTokens[platformName][tierName]) {
+      allTokens[platformName][tierName] = {};
+    }
+
+    allTokens[platformName][tierName][token.name] = {
+      $value: token.value,
+      $type: token.type,
+      path: token.path,
+    };
   }
 
   return { allTokens, orderedPlatforms };
