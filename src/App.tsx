@@ -29,6 +29,7 @@ const getInitialTheme = (): Theme => {
 };
 
 export default function App() {
+  const [pathname, setPathname] = useState<string>(window.location.pathname);
   const [allTokens, setAllTokens] = useState<Record<string, PlatformTokens>>(
     {},
   );
@@ -96,6 +97,24 @@ export default function App() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setPathname(window.location.pathname);
+    };
+
+    window.addEventListener("popstate", handleRouteChange);
+
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, []);
+
+  const navigateTo = (nextPath: string) => {
+    if (window.location.pathname === nextPath) return;
+    window.history.pushState({}, "", nextPath);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+
   const visibleTokens = useMemo(() => {
     if (!platform || !allTokens[platform]) return [];
 
@@ -132,8 +151,7 @@ export default function App() {
 
   const hasLoadedData = Object.keys(allTokens).length > 0;
   const isInspectorRoute =
-    window.location.pathname.startsWith("/token-inspector") ||
-    window.location.pathname.startsWith("/inspector");
+    pathname.startsWith("/token-inspector") || pathname.startsWith("/inspector");
   const hasActiveFilters =
     tier !== "all" || (defaultPlatform ? platform !== defaultPlatform : false);
   const showClearFiltersAction =
@@ -153,8 +171,14 @@ export default function App() {
               </h1>
 
               <div className="flex items-center justify-end gap-2">
-                <Button asChild variant="outline" size="sm" className="h-8">
-                  <a href="/">Token Grid</a>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => navigateTo("/")}
+                >
+                  Token Grid
                 </Button>
 
                 <Badge
@@ -233,8 +257,14 @@ export default function App() {
             </h1>
 
             <div className="flex items-center justify-end gap-2">
-              <Button asChild variant="outline" size="sm" className="h-8">
-                <a href="/token-inspector">Token Inspector</a>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => navigateTo("/token-inspector")}
+              >
+                Token Inspector
               </Button>
 
               <Badge
