@@ -131,7 +131,9 @@ export default function App() {
   }, [allTokens, platform, tier, search]);
 
   const hasLoadedData = Object.keys(allTokens).length > 0;
-  const isInspectorRoute = window.location.pathname.startsWith("/inspector");
+  const isInspectorRoute =
+    window.location.pathname.startsWith("/token-inspector") ||
+    window.location.pathname.startsWith("/inspector");
   const hasActiveFilters =
     tier !== "all" || (defaultPlatform ? platform !== defaultPlatform : false);
   const showClearFiltersAction =
@@ -151,6 +153,10 @@ export default function App() {
               </h1>
 
               <div className="flex items-center justify-end gap-2">
+                <Button asChild variant="outline" size="sm" className="h-8">
+                  <a href="/">Token Grid</a>
+                </Button>
+
                 <Badge
                   variant={null}
                   className="font-mono font-light border-none opacity-70"
@@ -227,6 +233,10 @@ export default function App() {
             </h1>
 
             <div className="flex items-center justify-end gap-2">
+              <Button asChild variant="outline" size="sm" className="h-8">
+                <a href="/token-inspector">Token Inspector</a>
+              </Button>
+
               <Badge
                 variant={null}
                 className="font-mono font-light border-none opacity-70"
