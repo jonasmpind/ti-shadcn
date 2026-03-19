@@ -1,15 +1,19 @@
 import { loadTokens } from "@/token-loaders/registry";
+import type { NormalizedTokenSet } from "@/token-normalizer/types";
 
 interface Token {
   $value: string;
   $type: string;
   path: string[];
+  raw: unknown;
+  source: string;
 }
 
 type FlatTierTokens = Record<string, Token>;
 export type PlatformTokens = Record<string, FlatTierTokens>;
 
 export interface LoadedTokenData {
+  normalizedTokens: NormalizedTokenSet;
   allTokens: Record<string, PlatformTokens>;
   orderedPlatforms: string[];
 }
@@ -61,8 +65,10 @@ export async function loadTokenData(
       $value: token.value,
       $type: token.type,
       path: token.path,
+      raw: token.raw,
+      source: token.source,
     };
   }
 
-  return { allTokens, orderedPlatforms };
+  return { normalizedTokens, allTokens, orderedPlatforms };
 }

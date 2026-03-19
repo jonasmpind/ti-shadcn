@@ -65,6 +65,7 @@ export function normalizeTokenStudioTokens(
         value: toStringValue(node.$value),
         type: getTokenType(node.$type),
         path,
+        raw: node,
         tokenSetId: options.tokenSetId,
         source: options.source,
       });
@@ -95,6 +96,7 @@ export function normalizeStyleDictionaryTokens(
         value: toStringValue(node.value),
         type: getTokenType(node.type),
         path,
+        raw: node,
         tokenSetId: options.tokenSetId,
         source: options.source,
       });

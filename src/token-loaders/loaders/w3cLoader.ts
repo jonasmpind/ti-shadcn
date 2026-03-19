@@ -45,7 +45,7 @@ export const w3cLoader: TokenLoader = {
 
     const options = {
       tokenSetId: input.tokenSetId ?? DEFAULT_TOKEN_SET_ID,
-      source: input.source ?? "unknown",
+      source: "w3cLoader",
     };
 
     if (hasLeafWithKey(payload, "$value")) {

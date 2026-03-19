@@ -12,8 +12,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { resolveTokenValue } from "@/lib/token-engine";
 import { TokenCard } from "@/components/token-card";
+import { TokenInspector } from "@/components/token-inspector/TokenInspector";
 import { Moon, Sun, X } from "lucide-react";
 import { loadTokenData, type PlatformTokens } from "@/token-engine/loadTokenData";
+import type { NormalizedToken } from "@/token-normalizer/types";
 
 type Theme = "light" | "dark";
 
@@ -27,8 +29,12 @@ const getInitialTheme = (): Theme => {
 };
 
 export default function App() {
+  const [pathname, setPathname] = useState<string>(window.location.pathname);
   const [allTokens, setAllTokens] = useState<Record<string, PlatformTokens>>(
     {},
+  );
+  const [normalizedTokens, setNormalizedTokens] = useState<NormalizedToken[]>(
+    [],
   );
   const [platform, setPlatform] = useState<string>("");
   const [defaultPlatform, setDefaultPlatform] = useState<string>("");
@@ -46,11 +52,16 @@ export default function App() {
       setLoadError(null);
 
       try {
-        const { allTokens: data, orderedPlatforms } = await loadTokenData();
+        const {
+          allTokens: data,
+          orderedPlatforms,
+          normalizedTokens: loadedNormalizedTokens,
+        } = await loadTokenData();
 
         if (isCancelled) return;
 
         setAllTokens(data);
+        setNormalizedTokens(loadedNormalizedTokens);
         setDefaultPlatform(orderedPlatforms[0] ?? "");
         setPlatform((currentPlatform) =>
           currentPlatform && data[currentPlatform]
@@ -61,6 +72,7 @@ export default function App() {
         if (isCancelled) return;
 
         setAllTokens({});
+        setNormalizedTokens([]);
         setPlatform("");
         setLoadError(
           error instanceof Error
@@ -84,6 +96,24 @@ export default function App() {
     root.classList.toggle("dark", theme === "dark");
     localStorage.setItem("theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setPathname(window.location.pathname);
+    };
+
+    window.addEventListener("popstate", handleRouteChange);
+
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, []);
+
+  const navigateTo = (nextPath: string) => {
+    if (window.location.pathname === nextPath) return;
+    window.history.pushState({}, "", nextPath);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
 
   const visibleTokens = useMemo(() => {
     if (!platform || !allTokens[platform]) return [];
@@ -120,10 +150,99 @@ export default function App() {
   }, [allTokens, platform, tier, search]);
 
   const hasLoadedData = Object.keys(allTokens).length > 0;
+  const isInspectorRoute =
+    pathname.startsWith("/token-inspector") || pathname.startsWith("/inspector");
   const hasActiveFilters =
     tier !== "all" || (defaultPlatform ? platform !== defaultPlatform : false);
   const showClearFiltersAction =
     !isLoading && !loadError && visibleTokens.length === 0 && Boolean(search) && hasActiveFilters;
+
+  if (isInspectorRoute) {
+    return (
+      <TooltipProvider delayDuration={120} skipDelayDuration={0}>
+        <div className="h-screen w-full overflow-hidden">
+          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-12 items-center justify-between gap-3 px-4 md:px-6">
+              <h1 className="text-sm font-semibold tracking-tight">
+                Token Inspector{" "}
+                <span className="ml-1 text-xs font-normal opacity-70">
+                  raw → normalized
+                </span>
+              </h1>
+
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => navigateTo("/")}
+                >
+                  Token Grid
+                </Button>
+
+                <Badge
+                  variant={null}
+                  className="font-mono font-light border-none opacity-70"
+                >
+                  {isLoading
+                    ? "Loading tokens..."
+                    : `Tokens (${normalizedTokens.length})`}
+                </Badge>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() =>
+                    setTheme((currentTheme) =>
+                      currentTheme === "light" ? "dark" : "light",
+                    )
+                  }
+                  aria-label={
+                    theme === "light"
+                      ? "Switch to dark mode"
+                      : "Switch to light mode"
+                  }
+                  title={
+                    theme === "light"
+                      ? "Switch to dark mode"
+                      : "Switch to light mode"
+                  }
+                >
+                  {theme === "light" ? <Moon /> : <Sun />}
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          <main className="h-[calc(100vh-3rem)] overflow-hidden p-4 md:p-6">
+            {isLoading && (
+              <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+                Loading token files...
+              </div>
+            )}
+
+            {!isLoading && loadError && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                {loadError}
+              </div>
+            )}
+
+            {!isLoading && !loadError && normalizedTokens.length === 0 && (
+              <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+                No tokens were loaded.
+              </div>
+            )}
+
+            {!isLoading && !loadError && normalizedTokens.length > 0 && (
+              <TokenInspector tokens={normalizedTokens} />
+            )}
+          </main>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={0}>
@@ -138,6 +257,16 @@ export default function App() {
             </h1>
 
             <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => navigateTo("/token-inspector")}
+              >
+                Token Inspector
+              </Button>
+
               <Badge
                 variant={null}
                 className="font-mono font-light border-none opacity-70"

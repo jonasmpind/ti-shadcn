@@ -3,6 +3,7 @@ export interface NormalizedToken {
   value: string;
   type: string;
   path: string[];
+  raw: unknown;
   tokenSetId: string;
   source: string;
 }

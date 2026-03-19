@@ -35,7 +35,7 @@ export const styleDictionaryLoader: TokenLoader = {
 
     return normalizeStyleDictionaryTokens(input.data, {
       tokenSetId: input.tokenSetId ?? DEFAULT_TOKEN_SET_ID,
-      source: input.source ?? "unknown",
+      source: "styleDictionaryLoader",
     });
   },
 };
