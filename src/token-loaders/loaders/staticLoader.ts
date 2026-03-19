@@ -37,7 +37,6 @@ export function createStaticLoader(
       }
 
       const basePath = input.basePath ?? DEFAULT_TOKENS_BASE_PATH;
-      const source = input.source ?? "static";
       const manifest = await fetchJson<StaticTokenManifest>(`${basePath}/manifest.json`);
 
       if (!manifest || !Array.isArray(manifest.tokens)) {
@@ -57,7 +56,6 @@ export function createStaticLoader(
             kind: "token-data",
             data,
             tokenSetId: toTokenSetId(normalizedFile),
-            source,
           });
         }),
       );

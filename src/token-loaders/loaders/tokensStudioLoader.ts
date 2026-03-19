@@ -33,7 +33,7 @@ export const tokensStudioLoader: TokenLoader = {
 
     return normalizeTokenStudioTokens(input.data, {
       tokenSetId: input.tokenSetId ?? DEFAULT_TOKEN_SET_ID,
-      source: input.source ?? "unknown",
+      source: "tokensStudioLoader",
     });
   },
 };
